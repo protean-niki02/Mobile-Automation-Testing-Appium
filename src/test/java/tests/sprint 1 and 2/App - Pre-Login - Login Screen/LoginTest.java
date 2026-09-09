@@ -14,10 +14,10 @@ public class LoginTest extends BaseTest {
         loginPage.clickLogin();
 
         step("Enter valid mobile number");
-        loginPage.enterMobileNumber("7876765856");
+        loginPage.enterMobileNumber("8921639271");
 
         step("Enter date of birth");
-        loginPage.enterDateOfBirth("07/09/2005");
+        loginPage.enterDateOfBirth("01/01/1999");
 
         step("Tap Login via OTP");
         loginPage.clickLoginViaOtp();
