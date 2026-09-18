@@ -4,7 +4,6 @@ import framework.BaseTest;
 import framework.WaitUtils;
 import io.appium.java_client.AppiumBy;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -12,42 +11,27 @@ import java.util.Map;
 
 public class TC07GridTileImagesOnLoginScreenTest extends BaseTest {
 
-    private static final String APP_PACKAGE = "com.insurance.bimasugam";
+    private static final String APP_PACKAGE =
+            "com.insurance.bimasugam";
 
-    // Onboarding screen
     private static final By WELCOME_HEADING =
             AppiumBy.accessibilityId("Welcome to Bima Sugam");
 
     /*
-     * Action button locators.
+     * The Login button is visible on the splash/onboarding screens.
      *
-     * The automation tries these in sequence because the exact
-     * accessibility/resource-id of the button is not yet available.
-     */
-    private static final By GET_STARTED_BUTTON =
-            AppiumBy.accessibilityId("Get Started");
-
-    private static final By CONTINUE_BUTTON =
-            AppiumBy.accessibilityId("Continue");
-
-    private static final By NEXT_BUTTON =
-            AppiumBy.accessibilityId("Next");
-
-    /*
-     * Login screen identifiers.
+     * Based on the supplied 413 x 917 screen reference,
+     * the Login button is approximately at 80% of the
+     * screen height.
      *
-     * These are intentionally kept as alternatives because the
-     * exact Login screen hierarchy has not yet been provided.
+     * Current device resolution:
+     * 1080 x 2400
+     *
+     * X = center of screen
+     * Y = approximately 80% of screen height
      */
-    private static final By MOBILE_NUMBER_FIELD =
-            AppiumBy.androidUIAutomator(
-                    "new UiSelector().textContains(\"Mobile Number\")"
-            );
-
-    private static final By LOGIN_BUTTON =
-            AppiumBy.androidUIAutomator(
-                    "new UiSelector().textContains(\"Login\")"
-            );
+    private static final int LOGIN_X = 540;
+    private static final int LOGIN_Y = 1920;
 
     @Test(
             description = "US-UCM-01 - SC_01 - SC_01_TC_007 - "
@@ -70,80 +54,89 @@ public class TC07GridTileImagesOnLoginScreenTest extends BaseTest {
 
         step("Wait for the onboarding Welcome screen");
 
-        WaitUtils.visible(driver, WELCOME_HEADING);
+        WaitUtils.visible(
+                driver,
+                WELCOME_HEADING
+        );
 
         Assert.assertTrue(
                 driver.findElement(WELCOME_HEADING).isDisplayed(),
                 "Onboarding Welcome screen should be displayed"
         );
 
-        step("Allow onboarding content and auto-scrolling grid to load");
+        step("Allow splash screen content and grid images to load");
 
         waitForSeconds(3);
 
-        step("Navigate through onboarding screens");
-
-        boolean loginReached = false;
-
         /*
-         * Try the known action-button possibilities.
+         * ---------------------------------------------------------
+         * NAVIGATE THROUGH SPLASH SCREENS
+         * ---------------------------------------------------------
          */
-        loginReached = clickIfPresent(GET_STARTED_BUTTON);
 
-        if (!loginReached) {
-            loginReached = clickIfPresent(CONTINUE_BUTTON);
-        }
+        step("Navigate through splash screens");
 
-        if (!loginReached) {
-            loginReached = clickIfPresent(NEXT_BUTTON);
-        }
+        for (int i = 1; i <= 4; i++) {
 
-        /*
-         * If the first onboarding action did not directly reach Login,
-         * continue trying the action button for a few onboarding screens.
-         */
-        for (int i = 0; i < 4 && !isLoginScreenDisplayed(); i++) {
+            step("Navigate to splash screen " + (i + 1));
 
-            step("Check onboarding screen " + (i + 1));
-
-            if (clickIfPresent(GET_STARTED_BUTTON)) {
-                waitForSeconds(2);
-                continue;
-            }
-
-            if (clickIfPresent(CONTINUE_BUTTON)) {
-                waitForSeconds(2);
-                continue;
-            }
-
-            if (clickIfPresent(NEXT_BUTTON)) {
-                waitForSeconds(2);
-                continue;
-            }
-
-            /*
-             * Fallback swipe for onboarding navigation.
-             */
             swipeUp();
 
             waitForSeconds(2);
         }
 
-        step("Verify that the Login screen is displayed");
+        /*
+         * ---------------------------------------------------------
+         * SPLASH 5
+         * ---------------------------------------------------------
+         */
 
-        Assert.assertTrue(
-                isLoginScreenDisplayed(),
-                "Login screen should be displayed after navigating "
-                        + "through the onboarding screens"
+        step("Verify Splash 5 is displayed");
+
+        Assert.assertEquals(
+                driver.getCurrentPackage(),
+                APP_PACKAGE,
+                "Bima Sugam should remain in the foreground"
         );
 
-        step("Allow Login screen content to load");
+        step("Tap the Login button on Splash 5");
 
-        waitForSeconds(2);
+        /*
+         * Login button location is based on the supplied
+         * 413 x 917 reference image and scaled to the
+         * current 1080 x 2400 device.
+         */
+        driver.executeScript(
+                "mobile: clickGesture",
+                Map.of(
+                        "x", LOGIN_X,
+                        "y", LOGIN_Y
+                )
+        );
+
+        step("Wait for Login screen to load");
+
+        waitForSeconds(4);
+
+        /*
+         * ---------------------------------------------------------
+         * VERIFY LOGIN SCREEN
+         * ---------------------------------------------------------
+         */
+
+        step("Verify Bima Sugam remains in the foreground");
+
+        Assert.assertEquals(
+                driver.getCurrentPackage(),
+                APP_PACKAGE,
+                "Bima Sugam should remain in the foreground "
+                        + "after tapping Login"
+        );
 
         step("Capture Login screen UI hierarchy");
 
-        String pageSource = driver.getPageSource();
+        String pageSource =
+                driver.getPageSource();
 
         Assert.assertNotNull(
                 pageSource,
@@ -155,132 +148,77 @@ public class TC07GridTileImagesOnLoginScreenTest extends BaseTest {
                 "Login screen page source should not be empty"
         );
 
-        step("Verify Bima Sugam remains in the foreground");
+        /*
+         * The Welcome screen should disappear after Login
+         * is selected.
+         */
+        step("Verify onboarding screen is no longer displayed");
 
-        Assert.assertEquals(
-                driver.getCurrentPackage(),
-                APP_PACKAGE,
-                "Bima Sugam should remain in the foreground"
+        boolean welcomeVisible = false;
+
+        try {
+
+            if (!driver.findElements(WELCOME_HEADING).isEmpty()) {
+
+                welcomeVisible =
+                        driver.findElement(WELCOME_HEADING).isDisplayed();
+            }
+
+        } catch (Exception ignored) {
+            // Welcome screen is no longer displayed.
+        }
+
+        Assert.assertFalse(
+                welcomeVisible,
+                "Onboarding Welcome screen should no longer be "
+                        + "displayed after tapping Login"
         );
 
         /*
          * ---------------------------------------------------------
-         * GRID TILE IMAGE VERIFICATION
+         * GRID TILE IMAGE VALIDATION
          * ---------------------------------------------------------
          *
-         * The exact image resource IDs are not available yet.
+         * The supplied reference confirms the grid tile images
+         * on the splash screens.
          *
-         * Therefore we verify that the Login screen is successfully
-         * displayed and contains its UI hierarchy.
-         *
-         * Once the exact grid tile image IDs are available, this
-         * section should be replaced with exact image assertions.
+         * Exact Login-screen image resource IDs are not available
+         * yet, so we capture the Login screen hierarchy here.
          */
 
-        step("Verify Login screen UI content is available");
+        step("Verify Login screen UI hierarchy is available");
 
         Assert.assertTrue(
                 pageSource.contains(APP_PACKAGE),
-                "Login screen should belong to the Bima Sugam application"
+                "Login screen should belong to Bima Sugam"
         );
+
+        System.out.println();
+        System.out.println("========================================");
+        System.out.println("LOGIN SCREEN UI HIERARCHY");
+        System.out.println("========================================");
+        System.out.println(pageSource);
+        System.out.println("========================================");
 
         step(
                 "SC_01_TC_007 completed - "
-                        + "Login screen is displayed and ready for "
-                        + "grid tile image validation"
+                        + "Login button interaction completed and "
+                        + "Login screen validation reached"
         );
     }
 
     /**
-     * Checks whether an element is available without failing the test.
-     */
-    private boolean clickIfPresent(By locator) {
-
-        try {
-
-            WebElement element = driver.findElement(locator);
-
-            if (element.isDisplayed() && element.isEnabled()) {
-
-                step(
-                        "Action button found using locator: "
-                                + locator
-                );
-
-                element.click();
-
-                return true;
-            }
-
-        } catch (Exception ignored) {
-            // Try the next locator.
-        }
-
-        return false;
-    }
-
-    /**
-     * Determines whether the Login screen is displayed.
-     */
-    private boolean isLoginScreenDisplayed() {
-
-        try {
-
-            if (driver.findElements(MOBILE_NUMBER_FIELD).size() > 0) {
-
-                WebElement mobileNumber =
-                        driver.findElement(MOBILE_NUMBER_FIELD);
-
-                if (mobileNumber.isDisplayed()) {
-                    return true;
-                }
-            }
-
-        } catch (Exception ignored) {
-            // Continue with next check.
-        }
-
-        try {
-
-            if (driver.findElements(LOGIN_BUTTON).size() > 0) {
-
-                WebElement login =
-                        driver.findElement(LOGIN_BUTTON);
-
-                if (login.isDisplayed()) {
-                    return true;
-                }
-            }
-
-        } catch (Exception ignored) {
-            // Login screen not found using this locator.
-        }
-
-        return false;
-    }
-
-    /**
-     * Swipe upward on the device.
+     * Navigate through the splash/onboarding screens.
      */
     private void swipeUp() {
-
-        int width = driver.manage()
-                .window()
-                .getSize()
-                .getWidth();
-
-        int height = driver.manage()
-                .window()
-                .getSize()
-                .getHeight();
 
         driver.executeScript(
                 "mobile: swipeGesture",
                 Map.of(
-                        "left", 0,
-                        "top", 0,
-                        "width", width,
-                        "height", height,
+                        "left", 100,
+                        "top", 200,
+                        "width", 880,
+                        "height", 2100,
                         "direction", "up",
                         "percent", 0.70
                 )

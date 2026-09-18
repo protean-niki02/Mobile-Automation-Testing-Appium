@@ -20,6 +20,12 @@ public class AndroidLocators {
     // LOGIN SCREEN
     // =========================================
 
+    public static final By LOGIN_HEADING =
+            AppiumBy.xpath(
+                    "//*[normalize-space(@text)='Login' "
+                            + "or normalize-space(@content-desc)='Login']"
+            );
+
     public static final By OTP_HINT =
             AppiumBy.accessibilityId(
                     "Your details will be verified by a secure OTP"
@@ -30,12 +36,20 @@ public class AndroidLocators {
                     "Mobile Number*"
             );
 
-    public static final By MOBILE_NUMBER_INPUT =
-            AppiumBy.androidUIAutomator(
-                    "new UiSelector()" +
-                    ".className(\"android.widget.EditText\")" +
-                    ".instance(0)"
+    public static final By COUNTRY_CODE_SELECTOR =
+            AppiumBy.xpath(
+                    "(//android.widget.EditText)[1]"
+                            + "/preceding::android.widget.ImageView[1]"
             );
+
+    public static final By ALTERNATE_COUNTRY_CODE =
+            AppiumBy.xpath(
+                    "//*[starts-with(normalize-space(@text), '+') "
+                            + "and normalize-space(@text) != '+91']"
+            );
+
+    public static final By MOBILE_NUMBER_INPUT =
+            AppiumBy.xpath("(//android.widget.EditText)[1]");
 
     public static final By DOB =
             AppiumBy.accessibilityId(
